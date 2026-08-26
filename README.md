@@ -2,8 +2,6 @@
 
 Browser-based explorer for AWS infrastructure running inside **Floci**.
 
-This is Floci, not LocalStack. The backend uses AWS-compatible boto3 calls against `FLOCI_ENDPOINT`.
-
 ## Prerequisites
 
 - Python 3.12+

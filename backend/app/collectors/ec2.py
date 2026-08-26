@@ -1,5 +1,20 @@
+from typing import Any
+
 from app.models.resource import Resource, isoformat_dt, tag_dict
 from app.collectors.base import BaseCollector
+
+
+def _security_group_ids(item: dict[str, Any]) -> list[str]:
+    ids: list[str] = []
+    for group in item.get("SecurityGroups") or item.get("Groups") or []:
+        if isinstance(group, str) and group:
+            ids.append(group)
+            continue
+        if isinstance(group, dict):
+            group_id = group.get("GroupId")
+            if group_id:
+                ids.append(str(group_id))
+    return ids
 
 
 class EC2Collector(BaseCollector):
@@ -17,6 +32,16 @@ class EC2Collector(BaseCollector):
                 if not instance_id:
                     continue
                 tags = tag_dict(instance.get("Tags"))
+                security_groups = _security_group_ids(instance)
+                subnet_id = instance.get("SubnetId")
+                vpc_id = instance.get("VpcId")
+                if not subnet_id or not vpc_id or not security_groups:
+                    for interface in instance.get("NetworkInterfaces") or []:
+                        subnet_id = subnet_id or interface.get("SubnetId")
+                        vpc_id = vpc_id or interface.get("VpcId")
+                        for group_id in _security_group_ids(interface):
+                            if group_id not in security_groups:
+                                security_groups.append(group_id)
                 resources.append(
                     Resource(
                         id=f"ec2:{instance_id}",
@@ -32,15 +57,11 @@ class EC2Collector(BaseCollector):
                             "instance_id": instance_id,
                             "instance_type": instance.get("InstanceType"),
                             "image_id": instance.get("ImageId"),
-                            "subnet_id": instance.get("SubnetId"),
-                            "vpc_id": instance.get("VpcId"),
+                            "subnet_id": subnet_id,
+                            "vpc_id": vpc_id,
                             "private_ip": instance.get("PrivateIpAddress"),
                             "public_ip": instance.get("PublicIpAddress"),
-                            "security_groups": [
-                                sg.get("GroupId")
-                                for sg in instance.get("SecurityGroups", [])
-                                if sg.get("GroupId")
-                            ],
+                            "security_groups": security_groups,
                             "tags": tags,
                             "launch_time": isoformat_dt(instance.get("LaunchTime")),
                         },

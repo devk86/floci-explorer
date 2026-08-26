@@ -22,6 +22,19 @@ def _index(resources: list[Resource]) -> dict[str, Resource]:
         if resource.name:
             indexed[f"{resource.service}:{resource.name}"] = resource
             indexed[resource.name] = resource
+        if resource.service == "vpc":
+            if resource.resource_type == "subnet":
+                subnet_id = resource.id.rsplit(":", 1)[-1]
+                indexed[subnet_id] = resource
+                indexed[f"vpc:subnet:{subnet_id}"] = resource
+            elif resource.resource_type == "security_group":
+                group_id = str(resource.metadata.get("group_id") or resource.id.rsplit(":", 1)[-1])
+                indexed[group_id] = resource
+                indexed[f"vpc:sg:{group_id}"] = resource
+            elif resource.resource_type == "vpc":
+                vpc_id = resource.id.split(":", 1)[-1]
+                indexed[vpc_id] = resource
+                indexed[f"vpc:{vpc_id}"] = resource
     return indexed
 
 
@@ -183,6 +196,39 @@ def stepfunctions_to_lambda(resources: list[Resource], index: dict[str, Resource
     return edges
 
 
+def ec2_network(resources: list[Resource], index: dict[str, Resource]) -> list[Relationship]:
+    edges: list[Relationship] = []
+    for instance in resources:
+        if instance.service != "ec2" or instance.resource_type != "instance":
+            continue
+        subnet_id = instance.metadata.get("subnet_id")
+        if subnet_id:
+            subnet = index.get(f"vpc:subnet:{subnet_id}") or index.get(str(subnet_id))
+            if subnet:
+                edges.append(_rel(instance.id, subnet.id, "in_subnet", 1.0, "subnet_id"))
+        vpc_id = instance.metadata.get("vpc_id")
+        if vpc_id:
+            vpc = index.get(f"vpc:{vpc_id}") or index.get(str(vpc_id))
+            if vpc:
+                edges.append(_rel(instance.id, vpc.id, "in_vpc", 1.0, "vpc_id"))
+        for group_id in instance.metadata.get("security_groups") or []:
+            group = index.get(f"vpc:sg:{group_id}") or index.get(str(group_id))
+            if group:
+                edges.append(
+                    _rel(instance.id, group.id, "uses_security_group", 1.0, "security_groups")
+                )
+    for item in resources:
+        if item.service != "vpc":
+            continue
+        vpc_id = item.metadata.get("vpc_id")
+        if not vpc_id or item.resource_type == "vpc":
+            continue
+        vpc = index.get(f"vpc:{vpc_id}") or index.get(str(vpc_id))
+        if vpc:
+            edges.append(_rel(item.id, vpc.id, "in_vpc", 1.0, "vpc_id"))
+    return edges
+
+
 RULES = [
     sqs_triggers_lambda,
     sns_publishes_to_sqs,
@@ -192,4 +238,5 @@ RULES = [
     apigateway_to_lambda,
     eventbridge_to_lambda,
     stepfunctions_to_lambda,
+    ec2_network,
 ]

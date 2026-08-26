@@ -88,3 +88,51 @@ def test_iam_execution_role() -> None:
     ]
     rels = DependencyEngine().build(resources)
     assert any(rel.relationship == "execution_role" and rel.confidence == 1.0 for rel in rels)
+
+
+def test_ec2_subnet_and_security_group() -> None:
+    resources = [
+        Resource(
+            id="ec2:i-abc",
+            service="ec2",
+            resource_type="instance",
+            name="web",
+            metadata={
+                "subnet_id": "subnet-1",
+                "vpc_id": "vpc-1",
+                "security_groups": ["sg-1"],
+            },
+        ),
+        Resource(
+            id="vpc:vpc-1",
+            service="vpc",
+            resource_type="vpc",
+            name="vpc-1",
+        ),
+        Resource(
+            id="vpc:subnet:subnet-1",
+            service="vpc",
+            resource_type="subnet",
+            name="subnet-1",
+            metadata={"vpc_id": "vpc-1"},
+        ),
+        Resource(
+            id="vpc:sg:sg-1",
+            service="vpc",
+            resource_type="security_group",
+            name="default",
+            metadata={"group_id": "sg-1", "vpc_id": "vpc-1"},
+        ),
+    ]
+    rels = DependencyEngine().build(resources)
+    assert any(
+        rel.source == "ec2:i-abc" and rel.target == "vpc:subnet:subnet-1" and rel.relationship == "in_subnet"
+        for rel in rels
+    )
+    assert any(
+        rel.source == "ec2:i-abc"
+        and rel.target == "vpc:sg:sg-1"
+        and rel.relationship == "uses_security_group"
+        for rel in rels
+    )
+    assert any(rel.source == "ec2:i-abc" and rel.target == "vpc:vpc-1" for rel in rels)

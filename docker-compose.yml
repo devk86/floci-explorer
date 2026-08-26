@@ -1,0 +1,25 @@
+services:
+  explorer:
+    build: .
+    image: floci-explorer:latest
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Do not reuse FLOCI_ENDPOINT from the host .env (127.0.0.1 is wrong in a container).
+      FLOCI_ENDPOINT: ${FLOCI_DOCKER_ENDPOINT:-http://floci:4566}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - floci
+    restart: unless-stopped
+
+networks:
+  floci:
+    external: true
+    name: floci_default

@@ -101,6 +101,25 @@ Floci emulates about 75 AWS services. Explorer registers a collector for each ma
 
 If Floci or boto3 does not implement a list API, the collector is marked unsupported.
 
+## Relationships
+
+The graph and resource-details pages only show links that a **dependency rule** can prove. Collecting two services is not enough; both resources must exist in inventory, and a rule in `backend/app/dependencies/rules.py` must match them. The engine never invents a missing target.
+
+Confirmed links (`confidence` 1.0) come from AWS configuration:
+
+| Source | Target | Evidence |
+|---|---|---|
+| SQS queue | Lambda | event source mappings |
+| SNS topic | SQS queue | subscriptions |
+| IAM role | Lambda | execution role ARN |
+| API Gateway, EventBridge, Step Functions | Lambda | integrations, targets, or state-machine definition |
+| EC2 instance | subnet, VPC, security group | instance (or ENI) metadata |
+| Subnet / security group | VPC | `vpc_id` |
+
+Inferred links (`confidence` below 0.9) currently cover Lambda environment variables that name a DynamoDB table or S3 bucket.
+
+Services that are inventoried but **not** wired yet include RDS, ECS, load balancers, EKS, Lambda VPC config, CloudWatch alarms, KMS, Secrets Manager, Route 53, CloudFormation, and generic list collectors. Those resources appear as isolated nodes until a rule is added.
+
 ## Adding a collector
 
 1. Create `backend/app/collectors/<service>.py` extending `BaseCollector`.

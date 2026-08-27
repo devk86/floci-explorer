@@ -16,7 +16,7 @@ type Props = {
 
 export function GraphToolbar(props: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded border border-[var(--line)] bg-[var(--panel)] p-2">
+    <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--panel)] p-2 shadow-[var(--shadow)]">
       <label className="relative">
         <Search className="absolute left-2 top-2 h-4 w-4 text-[var(--muted)]" />
         <input

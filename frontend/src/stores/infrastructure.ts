@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { GraphPayload, Health, Inventory, ResourcePage } from '../types/models'
 import * as api from '../services/api'
+import { useUiStore } from './ui'
 
 type ResourceQuery = Record<string, string | number | undefined>
 
@@ -93,6 +94,10 @@ export const useInfraStore = create<InfraState>((set, get) => ({
       if (force && Object.keys(get().resourceQuery).length > 0) {
         await get().loadResources(undefined, seq)
       }
+      if (force && get().refreshSeq === seq) {
+        const total = get().inventory?.total_resources ?? 0
+        useUiStore.getState().pushToast(`Inventory updated · ${total} resources`, 'ok')
+      }
     } catch (err) {
       if (get().refreshSeq !== seq) return
       set({
@@ -101,6 +106,10 @@ export const useInfraStore = create<InfraState>((set, get) => ({
           ? { ...get().health!, floci_connected: false }
           : get().health,
       })
+      useUiStore.getState().pushToast(
+        err instanceof Error ? err.message : 'Unable to reach the backend',
+        'bad',
+      )
     } finally {
       if (get().refreshSeq === seq) {
         set({ inFlight: false, loading: false, refreshing: false })

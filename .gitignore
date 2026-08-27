@@ -37,3 +37,7 @@ Thumbs.db
 
 # Docker
 *.log
+
+#Metadata
+CURSOR_PROMPT.md
+BUILD_PLAN.md

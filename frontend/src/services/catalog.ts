@@ -108,6 +108,10 @@ export function serviceLabel(service: string) {
   return SERVICE_META[service]?.label ?? service
 }
 
+export function serviceAccent(service: string) {
+  return SERVICE_META[service]?.accent ?? '#ff9900'
+}
+
 export function servicesFromInventory(services: Record<string, number> | undefined) {
   const keys = new Set([...ALL_SERVICES, ...Object.keys(services ?? {})])
   return [...keys].sort((a, b) => {

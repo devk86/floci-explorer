@@ -80,11 +80,29 @@ The image talks to Floci on the Docker network at `http://floci:4566` (container
 
 If Floci is not on the `floci_default` network, set `FLOCI_DOCKER_ENDPOINT` and attach Explorer to Floci's network. Binding Floci to `127.0.0.1:4566` only is fine for host clients; other containers should use the Floci service name, not localhost.
 
+To publish a rebuilt image (replace the Hub namespace if yours differs):
+
+```bash
+docker login
+docker tag floci-explorer:latest devk86/floci-explorer:latest
+docker push devk86/floci-explorer:latest
+```
+
+Hosts that pull from Hub need `docker pull` and a container recreate; `docker compose up --build` on this machine does not require Hub.
+
+## Inventory refresh
+
+The UI polls about every **5 seconds**. Those polls reuse the last snapshot (`GET /api/inventory` without `refresh=true`) so they do not recrawl Floci.
+
+**Refresh now** (and first load / Reconnect) calls `GET /api/inventory?refresh=true`, which recrawls all collectors immediately. That request is not dropped if a poll is already in flight. The graph, resource list, and resource details reload after a forced recrawl.
+
+`INVENTORY_REFRESH_INTERVAL` in `.env` is documented for the poll period; the running UI currently uses a 5 second interval in the frontend store.
+
 ## API
 
 - `GET /api/health`
 - `POST /api/health/reconnect`
-- `GET /api/inventory`
+- `GET /api/inventory` (`?refresh=true` forces a full Floci recrawl)
 - `GET /api/inventory/{service}`
 - `GET /api/resources`
 - `GET /api/resources/{service}`
@@ -95,7 +113,7 @@ If Floci is not on the `floci_default` network, set `FLOCI_DOCKER_ENDPOINT` and 
 
 Floci emulates about 75 AWS services. Explorer registers a collector for each matrix service:
 
-- Specialized collectors (rich metadata): EC2, S3, Lambda, DynamoDB, SQS, SNS, IAM, API Gateway, EventBridge, Step Functions, CloudWatch Logs, KMS, Secrets Manager, VPC, ECS, ECR, ELB v2, Route 53, CloudFormation, STS.
+- Specialized collectors (rich metadata): EC2, S3, Lambda, DynamoDB, SQS, SNS, IAM (users, roles, customer-managed policies), API Gateway, EventBridge, Step Functions, CloudWatch Logs, KMS, Secrets Manager, VPC, ECS, ECR, ELB v2, Route 53, CloudFormation, STS.
 - Generic list collectors for the rest of the [Floci service matrix](https://floci.io/floci/services/).
 - Presence-only entries for APIs with no inventory list (Sign-In, Bedrock Runtime, Pricing, Cost Explorer, RDS Data API, and similar). These show as 0 resources and are never faked.
 

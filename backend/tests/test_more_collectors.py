@@ -69,3 +69,20 @@ def test_iam_role() -> None:
     )
     resources = IAMCollector(_floci({"iam": fake})).collect_sync()
     assert resources[0].id == "iam:role:lambda-role"
+
+
+def test_iam_users() -> None:
+    fake = FakeClient(
+        list_roles=lambda: {"Roles": []},
+        list_policies=lambda **kwargs: {"Policies": []},
+        list_users=lambda: {
+            "Users": [
+                {"UserName": "alice", "Arn": "arn:aws:iam::1:user/alice"},
+                {"UserName": "bob", "Arn": "arn:aws:iam::1:user/bob"},
+                {"UserName": "carol", "Arn": "arn:aws:iam::1:user/carol"},
+            ]
+        },
+    )
+    resources = IAMCollector(_floci({"iam": fake})).collect_sync()
+    users = [item for item in resources if item.resource_type == "user"]
+    assert [item.id for item in users] == ["iam:user:alice", "iam:user:bob", "iam:user:carol"]

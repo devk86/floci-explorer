@@ -81,10 +81,12 @@ export function ResourceDetailsPage() {
             <Field label="Attributes" value={meta.attributes} />
           </>
         )}
-        {resource.service === 'sns' && (
+        {resource.service === 'iam' && (
           <>
-            <Field label="Topic ARN" value={resource.arn} />
-            <Field label="Subscriptions" value={meta.subscriptions} />
+            <Field label="Path" value={meta.path} />
+            <Field label="User ID" value={meta.user_id} />
+            <Field label="Create date" value={meta.create_date} />
+            <Field label="Tags" value={meta.tags} />
           </>
         )}
       </section>

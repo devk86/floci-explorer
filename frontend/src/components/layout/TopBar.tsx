@@ -13,6 +13,7 @@ export function TopBar() {
   const refreshAll = useInfraStore((s) => s.refreshAll)
   const reconnect = useInfraStore((s) => s.reconnect)
   const lastUpdated = useInfraStore((s) => s.lastUpdated)
+  const refreshing = useInfraStore((s) => s.refreshing)
   const connected = health?.floci_connected
 
   return (
@@ -53,7 +54,7 @@ export function TopBar() {
           className="inline-flex items-center gap-1 rounded border border-[var(--line)] px-2 py-1 hover:text-white"
           onClick={() => void refreshAll(true)}
         >
-          <RefreshCw className="h-3 w-3" /> Refresh now
+          <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} /> Refresh now
         </button>
         <button
           type="button"

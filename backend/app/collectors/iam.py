@@ -8,7 +8,10 @@ class IAMCollector(BaseCollector):
     def collect_sync(self) -> list[Resource]:
         client = self.client()
         resources: list[Resource] = []
-        roles = self.paginate(client, "list_roles", "Roles")
+        try:
+            roles = self.paginate(client, "list_roles", "Roles")
+        except Exception:
+            roles = []
         for role in roles:
             name = role.get("RoleName")
             if not name:
@@ -49,6 +52,32 @@ class IAMCollector(BaseCollector):
                     status="active",
                     metadata={"attachment_count": policy.get("AttachmentCount")},
                     raw=policy,
+                )
+            )
+        try:
+            users = self.paginate(client, "list_users", "Users")
+        except Exception:
+            users = []
+        for user in users:
+            name = user.get("UserName")
+            if not name:
+                continue
+            resources.append(
+                Resource(
+                    id=f"iam:user:{name}",
+                    service="iam",
+                    resource_type="user",
+                    name=name,
+                    arn=user.get("Arn"),
+                    region="global",
+                    status="active",
+                    metadata={
+                        "path": user.get("Path"),
+                        "user_id": user.get("UserId"),
+                        "create_date": str(user.get("CreateDate")) if user.get("CreateDate") else None,
+                        "tags": tag_dict(user.get("Tags")),
+                    },
+                    raw=user,
                 )
             )
         return resources

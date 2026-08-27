@@ -10,6 +10,7 @@ import type {
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 60000,
+  headers: { 'Cache-Control': 'no-cache' },
 })
 
 export async function getHealth() {

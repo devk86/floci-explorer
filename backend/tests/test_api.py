@@ -35,6 +35,11 @@ def test_inventory_and_resources_endpoints(client: TestClient, app) -> None:
     inventory = client.get("/api/inventory")
     assert inventory.status_code == 200
     assert inventory.json()["total_resources"] == 1
+    app.state.inventory.get_snapshot.assert_called_with(force=False)
+
+    forced = client.get("/api/inventory?refresh=true")
+    assert forced.status_code == 200
+    app.state.inventory.get_snapshot.assert_called_with(force=True)
 
     listed = client.get("/api/resources?search=order")
     assert listed.status_code == 200

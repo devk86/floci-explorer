@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { getResource } from '../services/api'
+import { useInfraStore } from '../stores/infrastructure'
 import type { Resource } from '../types/models'
 
 export function useResource(service?: string, resourceId?: string, showSecrets = false) {
   const [resource, setResource] = useState<Resource | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const forceTick = useInfraStore((s) => s.forceTick)
 
   useEffect(() => {
     if (!service || !resourceId) return
@@ -25,7 +27,7 @@ export function useResource(service?: string, resourceId?: string, showSecrets =
     return () => {
       cancelled = true
     }
-  }, [service, resourceId, showSecrets])
+  }, [service, resourceId, showSecrets, forceTick])
 
   return { resource, loading, error }
 }
